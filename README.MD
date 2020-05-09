@@ -50,7 +50,7 @@ VGG16 train on `trainval` and test on `test` split.
 It could be faster by removing visualization, logging, averaging loss etc.
 ## 3. Install dependencies
 
-requires PyTorch >=0.4
+requires PyTorch >=0.4  //conda install pytorch torchvision pytorch
 
 - install PyTorch >=0.4 with GPU (code are GPU-only), refer to [official website](http://pytorch.org)
 

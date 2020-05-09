@@ -49,13 +49,16 @@ VGG16 train on `trainval` and test on `test` split.
 
 It could be faster by removing visualization, logging, averaging loss etc.
 ## 3. Install dependencies
+conda create -n fasterrcnn1 python=3.7 -y
+conda activate fasterrcnn1
 
-requires PyTorch >=0.4  //conda install pytorch torchvision pytorch
+requires PyTorch >=0.4  
+//conda install pytorch torchvision pytorch
 
 - install PyTorch >=0.4 with GPU (code are GPU-only), refer to [official website](http://pytorch.org)
 
 - install cupy, you can install via `pip install cupy-cuda80` or(cupy-cuda90,cupy-cuda91, etc).
-
+//conda install -c anaconda cupy
 - install other dependencies:  `pip install -r requirements.txt `
 
 - Optional, but strongly recommended: build cython code `nms_gpu_post`: 

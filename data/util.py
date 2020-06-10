@@ -23,6 +23,10 @@ def read_image(path, dtype=np.float32, color=True):
     """
 
     f = Image.open(path)
+##使用Image.open()读取图片储存为一个对象，并非是numpy矩阵。
+##读取图片，对于彩色图像，不管其图像格式是PNG，还是BMP，或者JPG，在PIL中，使用Image模块的open()函数打开后，返回的图像对象的模式都是“RGB”。
+##而对于灰度图像，不管其图像格式是PNG，还是BMP，或者JPG，打开后，其模式为“L”。
+
     try:
         if color:
             img = f.convert('RGB')

@@ -1,5 +1,6 @@
 import numpy as np
 from PIL import Image
+##用PIL（python imaging library）进行图像读取和处理；
 import random
 
 
@@ -22,13 +23,18 @@ def read_image(path, dtype=np.float32, color=True):
         ~numpy.ndarray: An image.
     """
 
-    f = Image.open(path)
+    f = Image.open(path)   
+    
+    ##0.读取图片，对于彩色图像，不管其图像格式是PNG，还是BMP，或者JPG，在PIL中，使用Image模块的open()函数打开后，返回的图像对象的模式都是“RGB”。
+    ##而对于灰度图像，不管其图像格式是PNG，还是BMP，或者JPG，打开后，其模式为“L”。
+    
     try:
         if color:
             img = f.convert('RGB')
         else:
-            img = f.convert('P')
-        img = np.asarray(img, dtype=dtype)
+            img = f.convert('P')    ##模式“P”为8位彩色图像，它的每个像素用8个bit表示，其对应的彩色值是按照调色板查询出来的。
+        img = np.asarray(img, dtype=dtype)   ##将读取的图片转化为数组，array和asarray都可将结构数据转换为ndarray类型。
+                                         #但是主要区别就是当数据源是ndarray时，array仍会copy出一个副本，占用新的内存，但asarray不会，在原图操作。
     finally:
         if hasattr(f, 'close'):
             f.close()
@@ -42,6 +48,8 @@ def read_image(path, dtype=np.float32, color=True):
 
 
 def resize_bbox(bbox, in_size, out_size):
+    #根据图像大小调整边界框
+    #(y_{min}, x_{min}, y_{max}, x_{max}) 对应左上角（坐标轴原点在左上）、右下角
     """Resize bounding boxes according to image resize.
 
     The bounding boxes are expected to be packed into a two dimensional
@@ -75,6 +83,7 @@ def resize_bbox(bbox, in_size, out_size):
 
 
 def flip_bbox(bbox, size, y_flip=False, x_flip=False):
+    #翻转相应的边界框。
     """Flip bounding boxes accordingly.
 
     The bounding boxes are expected to be packed into a two dimensional
@@ -101,19 +110,19 @@ def flip_bbox(bbox, size, y_flip=False, x_flip=False):
     """
     H, W = size
     bbox = bbox.copy()
-    if y_flip:
+    if y_flip: #如果是垂直翻转
         y_max = H - bbox[:, 0]
         y_min = H - bbox[:, 2]
         bbox[:, 0] = y_min
         bbox[:, 2] = y_max
-    if x_flip:
+    if x_flip:#水平反转
         x_max = W - bbox[:, 1]
         x_min = W - bbox[:, 3]
         bbox[:, 1] = x_min
         bbox[:, 3] = x_max
     return bbox
 
-
+#转换裁剪后图片对应的bbox， 阶段或者移除（中心不在裁剪区域）bbox
 def crop_bbox(
         bbox, y_slice=None, x_slice=None,
         allow_outside_center=True, return_param=False):
@@ -136,7 +145,7 @@ def crop_bbox(
     Args:
         bbox (~numpy.ndarray): Bounding boxes to be transformed. The shape is
             :math:`(R, 4)`. :math:`R` is the number of bounding boxes.
-        y_slice (slice): The slice of y axis.
+        y_slice (slice): The slice of y axis.#切片
         x_slice (slice): The slice of x axis.
         allow_outside_center (bool): If this argument is :obj:`False`,
             bounding boxes whose centers are outside of the cropped area
@@ -188,7 +197,7 @@ def crop_bbox(
 
 def _slice_to_bounds(slice_):
     if slice_ is None:
-        return 0, np.inf
+        return 0, np.inf#无穷大
 
     if slice_.start is None:
         l = 0

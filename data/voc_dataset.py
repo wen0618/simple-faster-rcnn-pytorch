@@ -76,14 +76,14 @@ class VOCBboxDataset:
         id_list_file = os.path.join(
             data_dir, 'ImageSets/Main/{0}.txt'.format(split))
 
-        self.ids = [id_.strip() for id_ in open(id_list_file)]
+        self.ids = [id_.strip() for id_ in open(id_list_file)]#strip()用于移除字符串头尾指定的字符（默认为空格或换行符）或字符序列。
         self.data_dir = data_dir
         self.use_difficult = use_difficult
         self.return_difficult = return_difficult
         self.label_names = VOC_BBOX_LABEL_NAMES
 
     def __len__(self):
-        return len(self.ids)
+        return len(self.ids)  #trainval.txt有5011个，test.txt有210个
 
     def get_example(self, i):
         """Returns the i-th example.
@@ -100,38 +100,40 @@ class VOCBboxDataset:
         """
         id_ = self.ids[i]
         anno = ET.parse(
-            os.path.join(self.data_dir, 'Annotations', id_ + '.xml'))
-        bbox = list()
+            os.path.join(self.data_dir, 'Annotations', id_ + '.xml'))                              #打开xml文档
+        bbox = list()#list() 方法用于将元组转换为列表。
+        #注：元组与列表是非常类似的，区别在于元组的元素值不能修改，元组是放在括号中，列表是放于方括号[]中。
         label = list()
         difficult = list()
-        for obj in anno.findall('object'):
+        for obj in anno.findall('object'):                                             #找到root节点下的所有object节点 <tag,text>
             # when in not using difficult split, and the object is
             # difficult, skipt it.
-            if not self.use_difficult and int(obj.find('difficult').text) == 1:
+            if not self.use_difficult and int(obj.find('difficult').text) == 1:            #obj子节点下节点difficult的值
                 continue
 
-            difficult.append(int(obj.find('difficult').text))
+            difficult.append(int(obj.))
             bndbox_anno = obj.find('bndbox')
             # subtract 1 to make pixel indexes 0-based
             bbox.append([
                 int(bndbox_anno.find(tag).text) - 1
-                for tag in ('ymin', 'xmin', 'ymax', 'xmax')])
-            name = obj.find('name').text.lower().strip()
+                for tag in ('ymin', 'xmin', 'ymax', 'xmax')])  #让坐标基于（0,0）
+            name = obj.find('name').text.lower().strip()   #框中object name
             label.append(VOC_BBOX_LABEL_NAMES.index(name))
-        bbox = np.stack(bbox).astype(np.float32)
-        label = np.stack(label).astype(np.int32)
+        bbox = np.stack(bbox).astype(np.float32)     #所有object的bbox坐标堆叠存在列表里
+        label = np.stack(label).astype(np.int32)       #所有object的label存在列表里
         # When `use_difficult==False`, all elements in `difficult` are False.
         difficult = np.array(difficult, dtype=np.bool).astype(np.uint8)  # PyTorch don't support np.bool
+                                                 # PyTorch 不支持 np.bool，所以这里转换为uint8
 
         # Load a image
-        img_file = os.path.join(self.data_dir, 'JPEGImages', id_ + '.jpg')
+        img_file = os.path.join(self.data_dir, 'JPEGImages', id_ + '.jpg') #根据图片编号id在/JPEGImages/取图片
         img = read_image(img_file, color=True)
 
         # if self.return_difficult:
         #     return img, bbox, label, difficult
         return img, bbox, label, difficult
 
-    __getitem__ = get_example
+    __getitem__ = get_example   #一般如果想使用索引访问元素时，就可以在类中定义这个方法（__getitem__(self, key) )
 
 
 VOC_BBOX_LABEL_NAMES = (

@@ -109,7 +109,7 @@ class VOCBboxDataset:
             # when in not using difficult split, and the object is
             # difficult, skipt it.
             if not self.use_difficult and int(obj.find('difficult').text) == 1:            #obj子节点下节点difficult的值
-                continue
+                continue                 #testdataset这里为true，表示在测试阶段不选择difficult实例加入测试
 
             difficult.append(int(obj.))
             bndbox_anno = obj.find('bndbox')

@@ -70,7 +70,7 @@ def preprocess(img, min_size=600, max_size=1000):  #按照论文长边不超1000
     C, H, W = img.shape
     scale1 = min_size / min(H, W)
     scale2 = max_size / max(H, W)
-    scale = min(scale1, scale2) #选小的比例，这样长和宽都能放缩到规定的尺寸
+    scale = min(scale1, scale2) #选小的比例，这样长和宽都能放缩到规定的尺寸，至少有个一是等号
     img = img / 255.  #此处转换为0-1对应正则化的输入
     img = sktsf.resize(img, (C, H * scale, W * scale), mode='reflect',anti_aliasing=False)
     # both the longer and shorter should be less than

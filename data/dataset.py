@@ -9,6 +9,10 @@ import numpy as np
 from utils.config import opt
 
 
+
+#函数首先读取opt.caffe_pretrain判断是否使用caffe_pretrain进行预训练如果是的话，
+#对图片进行逆正则化处理，就是将图片处理成caffe模型需要的格式
+#去正则化,使img维度为[[B,G,R],H,W],因为caffe预训练模型输入为BGR 0-255图片，pytorch预训练模型采用RGB 0-1图片
 def inverse_normalize(img):
     if opt.caffe_pretrain:
         img = img + (np.array([122.7717, 115.9465, 102.9801]).reshape(3, 1, 1))
@@ -22,8 +26,10 @@ def pytorch_normalze(img):
     https://github.com/pytorch/vision/issues/223
     return appr -1~1 RGB
     """
+    #'imagenet' 的均值和方差
     normalize = tvtsf.Normalize(mean=[0.485, 0.456, 0.406],
                                 std=[0.229, 0.224, 0.225])
+    #from torchvision import transforms as tvtsf
     img = normalize(t.from_numpy(img).float())##add .float() to avoid error:....
     return img.numpy()
 
@@ -82,7 +88,7 @@ class Transform(object):
 
     def __call__(self, in_data):
         img, bbox, label = in_data
-        _, H, W = img.shape
+        _, H, W = img.shape  #-表示临时变量，一般用不到
         img = preprocess(img, self.min_size, self.max_size)
         _, o_H, o_W = img.shape
         scale = o_H / H

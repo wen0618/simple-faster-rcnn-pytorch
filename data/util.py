@@ -43,11 +43,10 @@ def read_image(path, dtype=np.float32, color=True):
 
     if img.ndim == 2:
         # reshape (H, W) -> (1, H, W)
-        return img[np.newaxis]
+        return img[np.newaxis]#np.newaxis增加一个维度
     else:
         # transpose (H, W, C) -> (C, H, W)
-        return img.transpose((2, 0, 1))
-
+        return img.transpose((2, 0, 1)) #2，0，1是转置后原轴的位置；eg.(15900,1046,3)->(3,1500,1046)
 
 def resize_bbox(bbox, in_size, out_size):
      #根据图像大小调整边界框
@@ -76,7 +75,8 @@ def resize_bbox(bbox, in_size, out_size):
     bbox = bbox.copy()
     y_scale = float(out_size[0]) / in_size[0]
     x_scale = float(out_size[1]) / in_size[1]
-    bbox[:, 0] = y_scale * bbox[:, 0]
+    bbox[:, 0] = y_scale * bbox[:, 0] 
+    #X[:,0]是numpy中数组的一种写法，表示对一个二维数组，取该二维数组第一维中的所有数据，第二维中取第0个数据，
     bbox[:, 2] = y_scale * bbox[:, 2]
     bbox[:, 1] = x_scale * bbox[:, 1]
     bbox[:, 3] = x_scale * bbox[:, 3]
@@ -240,8 +240,8 @@ def translate_bbox(bbox, y_offset=0, x_offset=0):
     """
 
     out_bbox = bbox.copy()
-    out_bbox[:, :2] += (y_offset, x_offset)
-    out_bbox[:, 2:] += (y_offset, x_offset)
+    out_bbox[:, :2] += (y_offset, x_offset)#第二维前两个坐标即ymin，xmin
+    out_bbox[:, 2:] += (y_offset, x_offset)#第二维从坐标2开始到结尾即ymax，xmax
 
     return out_bbox
 
@@ -279,6 +279,11 @@ def random_flip(img, y_random=False, x_random=False,
     y_flip, x_flip = False, False
     if y_random:
         y_flip = random.choice([True, False])
+    #从一维数组[true,false]中随机采样numpy.random.choice(a, size=None, replace=True, p=None)
+"""a : 如果是一维数组，就表示从这个一维数组中随机采样；如果是int型，就表示从0到a-1这个序列中随机采样。
+size : 采样结果的数量，默认为1.可以是整数，表示要采样的数量；也可以为tuple，如(m, n, k)，则要采样的数量为m * n * k，size为(m, n, k)。
+replace : boolean型，采样的样本是否要更换？这个地方我不太理解，测了一下发现replace指定为True时，采样的元素会有重复；当replace指定为False时，采样不会重复。
+p : 一个一维数组，制定了a中每个元素采样的概率，若为默认的None，则a中每个元素被采样的概率相同"""
     if x_random:
         x_flip = random.choice([True, False])
 

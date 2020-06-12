@@ -1,6 +1,6 @@
 from pprint import pprint
 
-
+####配置文件，定义class Config并用opt实例化
 # Default Configs for training
 # NOTE that, config items could be overwriten by passing argument through command line.
 # e.g. --voc-data-dir='./data/'
@@ -26,7 +26,7 @@ class Config:
 
     # visualization
     env = 'faster-rcnn'  # visdom env
-    port = 8097
+    port = 8097#visdom 端口
     plot_every = 40  # vis every N iter
 
     # preset
@@ -50,15 +50,16 @@ class Config:
     caffe_pretrain = False # use caffe pretrained model instead of torchvision
     caffe_pretrain_path = 'checkpoints/vgg16_caffe.pth'
 
-    def _parse(self, kwargs):
-        state_dict = self._state_dict()
+    def _parse(self, kwargs):  #解析（parse，pa：z）并设置用户设定的参数
+        state_dict = self._state_dict()  #读取Config类的所有参数dict{para_name:para_value}，该函数见底部
         for k, v in kwargs.items():
             if k not in state_dict:
                 raise ValueError('UnKnown Option: "--%s"' % k)
-            setattr(self, k, v)
+            setattr(self, k, v) #setattr(object, name, value) 函数用于设置属性（name)的值(value)，该属性不一定是存在的。
 
         print('======user config========')
-        pprint(self._state_dict())
+        pprint(self._state_dict()) #打印参数 pprint函数是为了让显示结果更加好看，，print()输出结果都在一行，
+             # 不方便查看，而pprint()采用分行打印输出，所以对于数据结构比较复杂、数据长度较长的数据，适合采用pprint()打印方式
         print('==========end============')
 
     def _state_dict(self):
@@ -66,4 +67,4 @@ class Config:
                 if not k.startswith('_')}
 
 
-opt = Config()
+opt = Config() #创建config对象opt

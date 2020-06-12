@@ -9,7 +9,7 @@ import numpy as np
 from utils.config import opt
 
 
-#逆正则化，还原为原始图片(RBG 0-255) 不知道在哪里用，有什么用
+#逆正则化，还原为原始图片(RBG 0-255) 以便显示（可视化）的时候使用
 
 #img维度为[[B,G,R],H,W],因为caffe预训练模型输入为BGR 0-255图片，pytorch预训练模型采用RGB 0-1图片
 def inverse_normalize(img):

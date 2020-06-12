@@ -109,8 +109,8 @@ class VOCBboxDataset:
             # when in not using difficult split, and the object is
             # difficult, skipt it.
             if not self.use_difficult and int(obj.find('difficult').text) == 1:            #obj子节点下节点difficult的值
-                continue                 #testdataset这里为true，表示在测试阶段不选择difficult实例加入测试
-
+                continue                 #/当没有启用difficult 但是我们找到了标注的difficult物体（标注值为1） 跳过这个object
+                                         #.text方法是获取xml标签里的内容
             difficult.append(int(obj.))
             bndbox_anno = obj.find('bndbox')
             # subtract 1 to make pixel indexes 0-based

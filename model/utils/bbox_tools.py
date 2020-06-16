@@ -3,8 +3,7 @@ import numpy as xp
 
 import six
 from six import __init__
-
-
+ #给定源框和loc 反向计算目标框 还原方法 与bbox2loc对应
 def loc2bbox(src_bbox, loc):
     """Decode bounding boxes from bounding box offsets and scales.
 
@@ -54,9 +53,9 @@ def loc2bbox(src_bbox, loc):
     src_bbox = src_bbox.astype(src_bbox.dtype, copy=False)
 
     src_height = src_bbox[:, 2] - src_bbox[:, 0]
-    src_width = src_bbox[:, 3] - src_bbox[:, 1]
-    src_ctr_y = src_bbox[:, 0] + 0.5 * src_height
-    src_ctr_x = src_bbox[:, 1] + 0.5 * src_width
+    src_width = src_bbox[:, 3] - src_bbox[:, 1] 
+    src_ctr_y = src_bbox[:, 0] + 0.5 * src_height 
+    src_ctr_x = src_bbox[:, 1] + 0.5 * src_width   
 
     dy = loc[:, 0::4]
     dx = loc[:, 1::4]
@@ -77,7 +76,7 @@ def loc2bbox(src_bbox, loc):
     return dst_bbox
 
 
-def bbox2loc(src_bbox, dst_bbox):
+def bbox2loc(src_bbox, dst_bbox):#给定两个框 返回源框到目标框变换的loc 这原论文中说的很详细
     """Encodes the source and the destination bounding boxes to "loc".
 
     Given bounding boxes, this function computes offsets and scales
@@ -119,10 +118,10 @@ def bbox2loc(src_bbox, dst_bbox):
 
     """
 
-    height = src_bbox[:, 2] - src_bbox[:, 0]
-    width = src_bbox[:, 3] - src_bbox[:, 1]
-    ctr_y = src_bbox[:, 0] + 0.5 * height
-    ctr_x = src_bbox[:, 1] + 0.5 * width
+    height = src_bbox[:, 2] - src_bbox[:, 0] #源框高
+    width = src_bbox[:, 3] - src_bbox[:, 1]#源框宽
+    ctr_y = src_bbox[:, 0] + 0.5 * height#源框中心y坐标
+    ctr_x = src_bbox[:, 1] + 0.5 * width#源框中心x坐标 
 
     base_height = dst_bbox[:, 2] - dst_bbox[:, 0]
     base_width = dst_bbox[:, 3] - dst_bbox[:, 1]
@@ -143,6 +142,8 @@ def bbox2loc(src_bbox, dst_bbox):
 
 
 def bbox_iou(bbox_a, bbox_b):
+    #计算两个框的IOU值 我们在cuda计算时已经见过了 但是这个方法的bbox_a与bbox_b可以是多维数组的(X,4)(Y,4)
+     #则返回的结果也是多维的结果（X,Y）
     """Calculate the Intersection of Unions (IoUs) between bounding boxes.
 
     IoU is calculated as a ratio of area of the intersection
@@ -190,7 +191,8 @@ def __test():
 if __name__ == '__main__':
     __test()
 
-
+#生成Anocher 论文中介绍的很清楚了，要在feature map每个点生成9种不同size和长宽比的box
+#这里只是生成最基本的Anchorbase 还没有在feature map上滑动
 def generate_anchor_base(base_size=16, ratios=[0.5, 1, 2],
                          anchor_scales=[8, 16, 32]):
     """Generate anchor base windows by enumerating aspect ratio and scales.
@@ -226,12 +228,12 @@ def generate_anchor_base(base_size=16, ratios=[0.5, 1, 2],
         :math:`(y_{min}, x_{min}, y_{max}, x_{max})` of a bounding box.
 
     """
-    py = base_size / 2.
-    px = base_size / 2.
+    py = base_size / 2. #y中点
+    px = base_size / 2. #x中点
 
-    anchor_base = np.zeros((len(ratios) * len(anchor_scales), 4),
+    anchor_base = np.zeros((len(ratios) * len(anchor_scales), 4),#/shape=(3*3,4)
                            dtype=np.float32)
-    for i in six.moves.range(len(ratios)):
+    for i in six.moves.range(len(ratios)): #9个box(ymax,xmax,ymin,xmin) 共36个参数
         for j in six.moves.range(len(anchor_scales)):
             h = base_size * anchor_scales[j] * np.sqrt(ratios[i])
             w = base_size * anchor_scales[j] * np.sqrt(1. / ratios[i])

@@ -1,3 +1,5 @@
+#如果环境不允许或其他原因 我们没有使用Cython加速 那么将加载这个python原生函数（慢很多） 代码与_nms_gpu_post.pyx 大同小异 这里不做讲解
+
 
 import numpy as np
 

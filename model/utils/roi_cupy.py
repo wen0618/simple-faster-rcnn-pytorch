@@ -1,3 +1,5 @@
+#ROI_POOLING2D的函数，作者用cuda写了一遍，嫌弃chainer和pytorch自带的pooling2d函数运行的慢…
+
 kernel_forward = '''
     extern "C"
     __global__ void roi_forward(const float* const bottom_data,const float* const bottom_rois,

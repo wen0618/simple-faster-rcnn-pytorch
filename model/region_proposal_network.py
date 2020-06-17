@@ -98,34 +98,34 @@ class RegionProposalNetwork(nn.Module):
                 Its shape is :math:`(H W A, 4)`.
 
         """
-        n, _, hh, ww = x.shape
-        anchor = _enumerate_shifted_anchor(
+        n, _, hh, ww = x.shape  #feature map
+        anchor = _enumerate_shifted_anchor(  #利用base_anchor 在featuremap上滑动 生成所有的9*hh*ww的Anchor
             np.array(self.anchor_base),
             self.feat_stride, hh, ww)
 
-        n_anchor = anchor.shape[0] // (hh * ww)
-        h = F.relu(self.conv1(x))
+        n_anchor = anchor.shape[0] // (hh * ww)    #1个pix有多少个anchor=9
+        h = F.relu(self.conv1(x))  #第一个卷积层+relu
 
-        rpn_locs = self.loc(h)
+        rpn_locs = self.loc(h)   #四个位置的cls  shape(1, A:36,H,W)   HW:feature_map   A：4*9（1个像素9anchor）
         # UNNOTE: check whether need contiguous
         # A: Yes
-        rpn_locs = rpn_locs.permute(0, 2, 3, 1).contiguous().view(n, -1, 4)
-        rpn_scores = self.score(h)
-        rpn_scores = rpn_scores.permute(0, 2, 3, 1).contiguous()
-        rpn_softmax_scores = F.softmax(rpn_scores.view(n, hh, ww, n_anchor, 2), dim=4)
-        rpn_fg_scores = rpn_softmax_scores[:, :, :, :, 1].contiguous()
+        rpn_locs = rpn_locs.permute(0, 2, 3, 1).contiguous().view(n, -1, 4)# (1, A:36,H,W,) to (1,H,W,A) to (1,HW9,4)               
+        rpn_scores = self.score(h) #卷积结果(1,2*9,H,W)
+        rpn_scores = rpn_scores.permute(0, 2, 3, 1).contiguous() #（1,H,W,2*9）
+        rpn_softmax_scores = F.softmax(rpn_scores.view(n, hh, ww, n_anchor, 2), dim=4) #(1,H,W,9,2)按二分类进行softmax
+        rpn_fg_scores = rpn_softmax_scores[:, :, :, :, 1].contiguous()  #前景分数
         rpn_fg_scores = rpn_fg_scores.view(n, -1)
-        rpn_scores = rpn_scores.view(n, -1, 2)
+        rpn_scores = rpn_scores.view(n, -1, 2)  #rpn分数
 
         rois = list()
         roi_indices = list()
-        for i in range(n):
-            roi = self.proposal_layer(
+        for i in range(n): #/batchsize=n=1
+            roi = self.proposal_layer(     #调用Proposal Creator 得到roi
                 rpn_locs[i].cpu().data.numpy(),
                 rpn_fg_scores[i].cpu().data.numpy(),
                 anchor, img_size,
                 scale=scale)
-            batch_index = i * np.ones((len(roi),), dtype=np.int32)
+            batch_index = i * np.ones((len(roi),), dtype=np.int32)  #这里是标注roi对于batch的索引 batch=1  所以没有作用
             rois.append(roi)
             roi_indices.append(batch_index)
 
@@ -134,7 +134,7 @@ class RegionProposalNetwork(nn.Module):
         return rpn_locs, rpn_scores, rois, roi_indices, anchor
 
 
-def _enumerate_shifted_anchor(anchor_base, feat_stride, height, width):
+def _enumerate_shifted_anchor(anchor_base, feat_stride, height, width):#将anchor映射回原图
     # Enumerate all shifted anchors:
     #
     # add A anchors (1, A, 4) to
@@ -147,21 +147,23 @@ def _enumerate_shifted_anchor(anchor_base, feat_stride, height, width):
     # xp = cuda.get_array_module(anchor_base)
     # it seems that it can't be boosed using GPU
     import numpy as xp
-    shift_y = xp.arange(0, height * feat_stride, feat_stride)
+    shift_y = xp.arange(0, height * feat_stride, feat_stride) #因为down sample了16倍 在featuremap移动一个相当于原图移动16
     shift_x = xp.arange(0, width * feat_stride, feat_stride)
-    shift_x, shift_y = xp.meshgrid(shift_x, shift_y)
-    shift = xp.stack((shift_y.ravel(), shift_x.ravel(),
+    shift_x, shift_y = xp.meshgrid(shift_x, shift_y)#生成网格点坐标矩阵 如果你用matlab那么这函数应该挺熟悉，就是生成
+                               #shift_x与shift_y组成的矩形中所有的点(含边缘) 点间隔feat_stride=16  结果的shift_x y按位置组成一个坐标   
+
+    shift = xp.stack((shift_y.ravel(), shift_x.ravel(),  #将y,x平铺后组合，生成shape(K,4) = (K,(y,x)(y,x)）的shift 
                       shift_y.ravel(), shift_x.ravel()), axis=1)
 
-    A = anchor_base.shape[0]
-    K = shift.shape[0]
+    A = anchor_base.shape[0] #1个点对应A(9)个anchor
+    K = shift.shape[0]  #共K个点
     anchor = anchor_base.reshape((1, A, 4)) + \
-             shift.reshape((1, K, 4)).transpose((1, 0, 2))
+             shift.reshape((1, K, 4)).transpose((1, 0, 2))  #anchor=(1,A,4) + (K,1,4)   根据广播将进行K和A的全排列 生成(K,A,4)所有锚
     anchor = anchor.reshape((K * A, 4)).astype(np.float32)
     return anchor
 
 
-def _enumerate_shifted_anchor_torch(anchor_base, feat_stride, height, width):
+def _enumerate_shifted_anchor_torch(anchor_base, feat_stride, height, width):#pytorch版本
     # Enumerate all shifted anchors:
     #
     # add A anchors (1, A, 4) to
@@ -187,7 +189,7 @@ def _enumerate_shifted_anchor_torch(anchor_base, feat_stride, height, width):
     return anchor
 
 
-def normal_init(m, mean, stddev, truncated=False):
+def normal_init(m, mean, stddev, truncated=False): #/正态初始化参数
     """
     weight initalizer: truncated normal and random normal.
     """

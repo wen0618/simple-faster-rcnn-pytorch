@@ -11,24 +11,24 @@ from utils.config import opt
 
 def decom_vgg16():
     # the 30th layer of features is relu of conv5_3
-    if opt.caffe_pretrain:
+    if opt.caffe_pretrain: #加载caffepretrain参数
         model = vgg16(pretrained=False)
         if not opt.load_path:
             model.load_state_dict(t.load(opt.caffe_pretrain_path))
     else:
-        model = vgg16(not opt.load_path)
+        model = vgg16(not opt.load_path) #加载pytorch pretrain参数
 
-    features = list(model.features)[:30]
-    classifier = model.classifier
+    features = list(model.features)[:30] #除去最后最大池化
+    classifier = model.classifier  #Linear ReLu Dropout
 
-    classifier = list(classifier)
-    del classifier[6]
-    if not opt.use_drop:
+    classifier = list(classifier) 
+    del classifier[6]  #删除最后一个全连接层
+    if not opt.use_drop:  #不使用dropout 删除两个dropout层
         del classifier[5]
         del classifier[2]
-    classifier = nn.Sequential(*classifier)
+    classifier = nn.Sequential(*classifier) #新的classifier
 
-    # freeze top4 conv
+    # freeze top4 conv #冻结前四个卷积层的参数 加快训练速度 不需要求梯度不用BP过程
     for layer in features[:10]:
         for p in layer.parameters():
             p.requires_grad = False
@@ -132,28 +132,28 @@ class VGG16RoIHead(nn.Module):
 
         """
         # in case roi_indices is  ndarray
-        roi_indices = at.totensor(roi_indices).float()
-        rois = at.totensor(rois).float()
-        indices_and_rois = t.cat([roi_indices[:, None], rois], dim=1)
+        roi_indices = at.totensor(roi_indices).float() #shape(128,)
+        rois = at.totensor(rois).float()  #shape(128,4)
+        indices_and_rois = t.cat([roi_indices[:, None], rois], dim=1) #shape(128,5)
         # NOTE: important: yx->xy
-        xy_indices_and_rois = indices_and_rois[:, [0, 2, 1, 4, 3]]
-        indices_and_rois =  xy_indices_and_rois.contiguous()
+        xy_indices_and_rois = indices_and_rois[:, [0, 2, 1, 4, 3]] #index ymin xmin ymax xmax TO index xmin ymin xmax ymax
+        indices_and_rois =  xy_indices_and_rois.contiguous() #返回连续内存的数据 以便放入cuda
 
-        pool = self.roi(x, indices_and_rois)
-        pool = pool.view(pool.size(0), -1)
+        pool = self.roi(x, indices_and_rois) #roipooling return:(128,512,7,7)
+        pool = pool.view(pool.size(0), -1)   #(128,25088) 正好与VGG16的全连接层连接
         fc7 = self.classifier(pool)
         roi_cls_locs = self.cls_loc(fc7)
         roi_scores = self.score(fc7)
         return roi_cls_locs, roi_scores
 
 
-def normal_init(m, mean, stddev, truncated=False):
+def normal_init(m, mean, stddev, truncated=False): #正态分布初始化参数
     """
     weight initalizer: truncated normal and random normal.
     """
     # x is a parameter
-    if truncated:
+    if truncated: #截断高斯
         m.weight.data.normal_().fmod_(2).mul_(stddev).add_(mean)  # not a perfect approximation
-    else:
+    else:  #普通高斯
         m.weight.data.normal_(mean, stddev)
         m.bias.data.zero_()

@@ -58,11 +58,12 @@ class FasterRCNNTrainer(nn.Module):
         self.vis = Visualizer(env=opt.env)
 
         # indicators for training status
-        self.rpn_cm = ConfusionMeter(2)
-        self.roi_cm = ConfusionMeter(21)
+          self.rpn_cm = ConfusionMeter(2) #前后景误差矩阵  
+        self.roi_cm = ConfusionMeter(21)  #21分类误差矩阵
         self.meters = {k: AverageValueMeter() for k in LossTuple._fields}  # average loss
-
+                                            #字典解析，平均loss AverageValueMeter会自动求均值
     def forward(self, imgs, bboxes, labels, scale):
+      #训练过程中的向前过程，是最大的forward类 读这个函数可以了解faster-r-cnn的过程
         """Forward Faster R-CNN and calculate losses.
 
         Here are notations used.
@@ -94,7 +95,7 @@ class FasterRCNNTrainer(nn.Module):
         _, _, H, W = imgs.shape
         img_size = (H, W)
 
-        features = self.faster_rcnn.extractor(imgs)
+        features = self.faster_rcnn.extractor(imgs) #生成featuremap
 
         rpn_locs, rpn_scores, rois, roi_indices, anchor = \
             self.faster_rcnn.rpn(features, img_size, scale)
@@ -149,7 +150,7 @@ class FasterRCNNTrainer(nn.Module):
         gt_roi_label = at.totensor(gt_roi_label).long()
         gt_roi_loc = at.totensor(gt_roi_loc)
 
-        roi_loc_loss = _fast_rcnn_loc_loss(
+        roi_loc_loss = _fast_rcnn_loc_loss( #roi loc损失
             roi_loc.contiguous(),
             gt_roi_loc,
             gt_roi_label.data,
@@ -164,7 +165,7 @@ class FasterRCNNTrainer(nn.Module):
 
         return LossTuple(*losses)
 
-    def train_step(self, imgs, bboxes, labels, scale):
+    def train_step(self, imgs, bboxes, labels, scale): #整个模型的一个step 从0梯度到向前过程，误差反向传播更新参数的过程
         self.optimizer.zero_grad()
         losses = self.forward(imgs, bboxes, labels, scale)
         losses.total_loss.backward()
@@ -172,7 +173,7 @@ class FasterRCNNTrainer(nn.Module):
         self.update_meters(losses)
         return losses
 
-    def save(self, save_optimizer=False, save_path=None, **kwargs):
+    def save(self, save_optimizer=False, save_path=None, **kwargs): #保存模型参数和config
         """serialize models include optimizer and other info
         return path where the model-file is stored.
 
@@ -191,14 +192,14 @@ class FasterRCNNTrainer(nn.Module):
         save_dict['other_info'] = kwargs
         save_dict['vis_info'] = self.vis.state_dict()
 
-        if save_optimizer:
+        if save_optimizer: #保存优化器参数
             save_dict['optimizer'] = self.optimizer.state_dict()
 
-        if save_path is None:
+        if save_path is None: #未指定保存地址
             timestr = time.strftime('%m%d%H%M')
-            save_path = 'checkpoints/fasterrcnn_%s' % timestr
+            save_path = 'checkpoints/fasterrcnn_%s' % timestr    #保存在checkpoints/时间戳命名
             for k_, v_ in kwargs.items():
-                save_path += '_%s' % v_
+                save_path += '_%s' % v_     
 
         save_dir = os.path.dirname(save_path)
         if not os.path.exists(save_dir):
@@ -208,7 +209,7 @@ class FasterRCNNTrainer(nn.Module):
         self.vis.save([self.vis.env])
         return save_path
 
-    def load(self, path, load_optimizer=True, parse_opt=False, ):
+    def load(self, path, load_optimizer=True, parse_opt=False, ): #加载模型参数
         state_dict = t.load(path)
         if 'model' in state_dict:
             self.faster_rcnn.load_state_dict(state_dict['model'])
@@ -221,12 +222,12 @@ class FasterRCNNTrainer(nn.Module):
             self.optimizer.load_state_dict(state_dict['optimizer'])
         return self
 
-    def update_meters(self, losses):
+    def update_meters(self, losses): #更新average loss
         loss_d = {k: at.scalar(v) for k, v in losses._asdict().items()}
         for key, meter in self.meters.items():
             meter.add(loss_d[key])
 
-    def reset_meters(self):
+      def reset_meters(self): #重置meters 
         for key, meter in self.meters.items():
             meter.reset()
         self.roi_cm.reset()
@@ -236,7 +237,7 @@ class FasterRCNNTrainer(nn.Module):
         return {k: v.value()[0] for k, v in self.meters.items()}
 
 
-def _smooth_l1_loss(x, t, in_weight, sigma):
+def _smooth_l1_loss(x, t, in_weight, sigma): #按照论文写得loss
     sigma2 = sigma ** 2
     diff = in_weight * (x - t)
     abs_diff = diff.abs()
@@ -246,7 +247,7 @@ def _smooth_l1_loss(x, t, in_weight, sigma):
     return y.sum()
 
 
-def _fast_rcnn_loc_loss(pred_loc, gt_loc, gt_label, sigma):
+def _fast_rcnn_loc_loss(pred_loc, gt_loc, gt_label, sigma): #按照论文写得loss
     in_weight = t.zeros(gt_loc.shape).cuda()
     # Localization loss is calculated only for positive rois.
     # NOTE:  unlike origin implementation, 

@@ -3,7 +3,7 @@ import numpy as xp
 
 import six
 from six import __init__
- #给定源框和loc 反向计算目标框 还原方法 与bbox2loc对应
+ #给定源框和loc 反向计算目标框 还原方法 与bbox2loc对应，用于将anchor调整后得到ROI
 def loc2bbox(src_bbox, loc):
     """Decode bounding boxes from bounding box offsets and scales.
 
@@ -76,7 +76,7 @@ def loc2bbox(src_bbox, loc):
     return dst_bbox
 
 
-def bbox2loc(src_bbox, dst_bbox):#给定两个框 返回源框到目标框变换的loc 这原论文中说的很详细
+def bbox2loc(src_bbox, dst_bbox):#给定两个框 返回源框到目标框变换的loc偏移量 这原论文中说的很详细
     """Encodes the source and the destination bounding boxes to "loc".
 
     Given bounding boxes, this function computes offsets and scales

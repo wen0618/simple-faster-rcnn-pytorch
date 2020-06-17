@@ -123,21 +123,21 @@ def bbox2loc(src_bbox, dst_bbox):#给定两个框 返回源框到目标框变换
     ctr_y = src_bbox[:, 0] + 0.5 * height#源框中心y坐标
     ctr_x = src_bbox[:, 1] + 0.5 * width#源框中心x坐标 
 
-    base_height = dst_bbox[:, 2] - dst_bbox[:, 0]
+    base_height = dst_bbox[:, 2] - dst_bbox[:, 0] #t框高
     base_width = dst_bbox[:, 3] - dst_bbox[:, 1]
     base_ctr_y = dst_bbox[:, 0] + 0.5 * base_height
     base_ctr_x = dst_bbox[:, 1] + 0.5 * base_width
 
-    eps = xp.finfo(height.dtype).eps
+    eps = xp.finfo(height.dtype).eps #eps是个很小的非负数，用于防止除法分母为零的错误，使用eps将可能出现的零用eps代替，防止报错
     height = xp.maximum(height, eps)
     width = xp.maximum(width, eps)
 
-    dy = (base_ctr_y - ctr_y) / height
+    dy = (base_ctr_y - ctr_y) / height #平移量tx=(x-xa)/wa
     dx = (base_ctr_x - ctr_x) / width
     dh = xp.log(base_height / height)
     dw = xp.log(base_width / width)
 
-    loc = xp.vstack((dy, dx, dh, dw)).transpose()
+    loc = xp.vstack((dy, dx, dh, dw)).transpose() #vstack:按垂直方向（行顺序）堆叠数组构成一个新的数组
     return loc
 
 

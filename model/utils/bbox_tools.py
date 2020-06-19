@@ -1,3 +1,11 @@
+###bbox_tools.py部分的代码主要由四个函数构成：1loc2bbox(src_bbox,loc)和bbox2loc(src_bbox,dst_bbox)是一对函数，其功能是刚好相反的，
+#比如loc2bbox()看其函数的参数src_bbox,loc就知道是有已知源框框和位置偏差，求出目标框框的作用，
+#而bbox2loc(src_bbox,dst_bbox)函数看其参数就知道是完成已知源框框和参考框框求出其位置偏差的功能！
+#而这个bbox_iou看函数名字我们也大概能猜出是求两个bbox的相交的交并比的功能，
+#最后的generate_anchor_base()的功能大概就是根据基准点生成9个基本的anchor的功能！
+#ratios=[0.5,1,2],anchor_scales=[8,16,32]是长宽比和缩放比例，3x3的参数刚好得到9个anchor!
+
+
 import numpy as np
 import numpy as xp
 
@@ -57,18 +65,18 @@ def loc2bbox(src_bbox, loc):
     src_ctr_y = src_bbox[:, 0] + 0.5 * src_height 
     src_ctr_x = src_bbox[:, 1] + 0.5 * src_width   
 
-    dy = loc[:, 0::4]
+    dy = loc[:, 0::4]  #读取输入的偏移量dy、dx、dw、dh
     dx = loc[:, 1::4]
     dh = loc[:, 2::4]
     dw = loc[:, 3::4]
 
-    ctr_y = dy * src_height[:, xp.newaxis] + src_ctr_y[:, xp.newaxis]
+    ctr_y = dy * src_height[:, xp.newaxis] + src_ctr_y[:, xp.newaxis]  #代入公式Gy=dy(p)*Ph+py
     ctr_x = dx * src_width[:, xp.newaxis] + src_ctr_x[:, xp.newaxis]
     h = xp.exp(dh) * src_height[:, xp.newaxis]
     w = xp.exp(dw) * src_width[:, xp.newaxis]
 
     dst_bbox = xp.zeros(loc.shape, dtype=loc.dtype)
-    dst_bbox[:, 0::4] = ctr_y - 0.5 * h
+    dst_bbox[:, 0::4] = ctr_y - 0.5 * h    #还原回左上角右下角的坐标形式
     dst_bbox[:, 1::4] = ctr_x - 0.5 * w
     dst_bbox[:, 2::4] = ctr_y + 0.5 * h
     dst_bbox[:, 3::4] = ctr_x + 0.5 * w
@@ -132,7 +140,7 @@ def bbox2loc(src_bbox, dst_bbox):#给定两个框 返回源框到目标框变换
     height = xp.maximum(height, eps)
     width = xp.maximum(width, eps)
 
-    dy = (base_ctr_y - ctr_y) / height #平移量tx=(x-xa)/wa
+    dy = (base_ctr_y - ctr_y) / height #平移量tx=(Gx-Px)/Pw
     dx = (base_ctr_x - ctr_x) / width
     dh = xp.log(base_height / height)
     dw = xp.log(base_width / width)
@@ -233,6 +241,11 @@ def generate_anchor_base(base_size=16, ratios=[0.5, 1, 2],
 
     anchor_base = np.zeros((len(ratios) * len(anchor_scales), 4),#/shape=(3*3,4)
                            dtype=np.float32)
+    
+    
+    # np.zeros这样初始的坐标都是(0,0,0,0)，其实这个函数一开始就只是以特征图的左上角为基准产生的9个anchor,
+    #根本没有对全图的所有anchor的产生做任何的解释！那所有的anchor是在哪里产生的呢？答案是在 model / region_proposal_network里！！
+    
     for i in six.moves.range(len(ratios)): #9个box(ymax,xmax,ymin,xmin) 共36个参数
         for j in six.moves.range(len(anchor_scales)):
             h = base_size * anchor_scales[j] * np.sqrt(ratios[i])

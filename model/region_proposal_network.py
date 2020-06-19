@@ -175,6 +175,10 @@ def _enumerate_shifted_anchor_torch(anchor_base, feat_stride, height, width):#py
     # !TODO: add support for torch.CudaTensor
     # xp = cuda.get_array_module(anchor_base)
     import torch as t
+    
+#shift_y /shift_x = xp.arange(0, height * feat_stride, feat_stride)  而这个feat_stride=16就是放大的倍数
+#最后得到的效果就是纵横向都扩大了16倍对应回原图大小，shift_x,shift_y = xp.meshgrid(shift_x,shift_y)就是形成了一个纵横向偏移量的矩阵，
+#也就是特征图的每一点都能够通过这个矩阵找到映射在原图中的具体位
     shift_y = t.arange(0, height * feat_stride, feat_stride)
     shift_x = t.arange(0, width * feat_stride, feat_stride)
     shift_x, shift_y = xp.meshgrid(shift_x, shift_y)
@@ -185,6 +189,7 @@ def _enumerate_shifted_anchor_torch(anchor_base, feat_stride, height, width):#py
     K = shift.shape[0]
     anchor = anchor_base.reshape((1, A, 4)) + \
              shift.reshape((1, K, 4)).transpose((1, 0, 2))
+ #首先将特征图的每个点都对应到原图位置，然后再在每个位置产生九个anchor
     anchor = anchor.reshape((K * A, 4)).astype(np.float32)
     return anchor
 
